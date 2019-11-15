@@ -1,9 +1,9 @@
 /***************************************************************************//**
- *   @file   config.h
- *   @brief  Config file of AD9361/API Driver.
- *   @author DBogdan (dragos.bogdan@analog.com)
+ *   @file   iio.h
+ *   @brief  Header file of iio
+ *   @author Cristian Pop (cristian.pop@analog.com)
 ********************************************************************************
- * Copyright 2015(c) Analog Devices, Inc.
+ * Copyright 2013(c) Analog Devices, Inc.
  *
  * All rights reserved.
  *
@@ -36,39 +36,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-#ifndef CONFIG_H_
-#define CONFIG_H_
 
-#define HAVE_SPLIT_GAIN_TABLE	1 /* only set to 0 in case split_gain_table_mode_enable = 0*/
-#define HAVE_TDD_SYNTH_TABLE	1 /* only set to 0 in case split_gain_table_mode_enable = 0*/
+#ifndef IIO_H_
+#define IIO_H_
 
-#define AD9361_DEVICE			1 /* set it 1 if AD9361 device is used, 0 otherwise */
-#define AD9364_DEVICE			0 /* set it 1 if AD9364 device is used, 0 otherwise */
-#define AD9363A_DEVICE			0 /* set it 1 if AD9363A device is used, 0 otherwise */
+/******************************************************************************/
+/***************************** Include Files **********************************/
+/******************************************************************************/
 
+#include "tinyiiod.h"
+#include "iio_types.h"
 
-#define XILINX_PLATFORM
-//#define USE_LIBIIO
-//#define ALTERA_PLATFORM
-//#define FMCOMMS5
-//#define ADI_RF_SOM
-//#define ADI_RF_SOM_CMOS
-//#define ADC_DMA_EXAMPLE
-//#define ADC_DMA_IRQ_EXAMPLE
-//#define DAC_DMA_EXAMPLE
-//#define AXI_ADC_NOT_PRESENT
-//#define TDD_SWITCH_STATE_EXAMPLE
+/******************************************************************************/
+/*************************** Types Declarations *******************************/
+/******************************************************************************/
 
-#ifdef USE_LIBIIO
-#define UART_INTERFACE
-#endif // USE_LIBIIO
+/******************************************************************************/
+/************************ Functions Declarations ******************************/
+/******************************************************************************/
 
-#ifndef USE_LIBIIO
-#define HAVE_VERBOSE_MESSAGES /* Recommended during development prints errors and warnings */
-//#define HAVE_DEBUG_MESSAGES /* For Debug purposes only */
-#endif // USE_LIBIIO
-/*
- * In case memory footprint is a concern these options allow
- * to disable unused functionality which may free up a few kb
- */
-#endif
+/* Set communication ops and read/write ops that will be called from
+ * "libtinyiiod". */
+ssize_t iio_init(struct tinyiiod **iiod, struct iio_server_ops *comm_ops);
+/* Free the resources allocated by iio_init(). */
+ssize_t iio_remove(struct tinyiiod *iiod);
+/* Register interface. */
+ssize_t iio_register(struct iio_interface_init_par *init_par);
+/* Unregister interface. */
+ssize_t iio_unregister(const char *device_name);
+
+#endif /* IIO_H_ */

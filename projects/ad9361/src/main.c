@@ -55,16 +55,30 @@
 #include "axi_dac_core.h"
 #include "axi_dmac.h"
 
+
+#ifdef USE_LIBIIO
+#ifdef UART_INTERFACE
+#include "irq.h"
+#include "irq_extra.h"
+#include "uart.h"
+#include "uart_extra.h"
+#endif // UART_INTERFACE
+#include "tinyiiod.h"
+#include "iio_axi_adc.h"
+#include "iio_axi_dac.h"
+#include "iio.h"
+#include "iio_ad9361.h"
+#endif // USE_LIBIIO
 /******************************************************************************/
 /************************ Variables Definitions *******************************/
 /******************************************************************************/
 struct axi_adc_init rx_adc_init = {
-	"rx_adc",
+	"cf-ad9361-lpc",
 	RX_CORE_BASEADDR,
 	4
 };
 struct axi_dac_init tx_dac_init = {
-	"tx_dac",
+	"cf-ad9361-dds-core-lpc",
 	TX_CORE_BASEADDR,
 	4
 };
@@ -391,6 +405,20 @@ struct ad9361_rf_phy *ad9361_phy_b;
 struct xil_spi_init_param xil_spi_param = {.id = SPI_DEVICE_ID, .flags = 0};
 struct spi_init_param spi_param = {.mode = SPI_MODE_1, .chip_select = SPI_CS};
 
+
+struct uart_desc *uart_device;
+#ifdef USE_LIBIIO
+ssize_t iio_uart_write(const char *buf, size_t len)
+{
+	return uart_write(uart_device, (const uint8_t *)buf, len);
+}
+
+ssize_t iio_uart_read(char *buf, size_t len)
+{
+	return uart_read(uart_device, (uint8_t *)buf, len);
+}
+#endif // USE_LIBIIO
+
 /***************************************************************************//**
  * @brief main
 *******************************************************************************/
@@ -401,6 +429,10 @@ int main(void)
 	Xil_ICacheEnable();
 	Xil_DCacheEnable();
 	spi_param.extra = &xil_spi_param;
+#endif
+
+#ifdef	USE_LIBIIO
+	struct tinyiiod *iiod;
 #endif
 
 #ifdef ALTERA_PLATFORM
@@ -574,6 +606,139 @@ int main(void)
 #endif
 #endif
 #endif
+
+
+
+#ifdef USE_LIBIIO
+
+	int32_t ret;
+	struct iio_axi_adc_init_par iio_axi_adc_init_par = {
+		.adc = ad9361_phy->rx_adc,
+		.dmac = ad9361_phy->rx_dmac,
+		.adc_ddr_base = ADC_DDR_BASEADDR,
+		.dcache_invalidate_range = (void (*)(uint32_t, uint32_t))Xil_DCacheInvalidateRange,
+	};
+	struct iio_axi_adc *iio_axi_adc_inst;
+
+	struct iio_axi_dac_init_par iio_axi_dac_init_par = {
+		.dac = ad9361_phy->tx_dac,
+		.dmac = ad9361_phy->tx_dmac,
+		.dac_ddr_base = DAC_DDR_BASEADDR,
+		.dcache_flush = Xil_DCacheFlush,
+	};
+	struct iio_axi_dac *iio_axi_dac_inst;
+
+	struct iio_server_ops uart_iio_server_ops = {
+		.read = iio_uart_read,
+		.write = iio_uart_write,
+	};
+
+	struct xil_irq_init_param xil_irq_init_par = {
+		.type = IRQ_PS,
+	};
+
+	struct irq_init_param irq_init_param = {
+		.irq_id = INTC_DEVICE_ID,
+		.extra = &xil_irq_init_par,
+	};
+
+	struct irq_desc *irq_desc;
+
+	struct xil_uart_init_param xil_uart_init_par = {
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID,
+		.irq_desc = irq_desc,
+	};
+	struct uart_init_par uart_init_par = {
+		.baud_rate = 921600,
+		.device_id = UART_DEVICE_ID,
+		.extra = &xil_uart_init_par,
+	};
+
+	ret = axi_dmac_init(&ad9361_phy->tx_dmac, default_init_param.tx_dmac_init);
+	if(ret < 0)
+		return ret;
+
+	ret = axi_dmac_init(&ad9361_phy->rx_dmac, default_init_param.rx_dmac_init);
+	if(ret < 0)
+		return ret;
+
+	ret = iio_axi_adc_init(&iio_axi_adc_inst, &iio_axi_adc_init_par);
+	if(ret < 0)
+		return ret;
+
+	ret = iio_axi_dac_init(&iio_axi_dac_inst, &iio_axi_dac_init_par);
+	if(ret < 0)
+		return ret;
+
+	ret = iio_init(&iiod, &uart_iio_server_ops);
+	if(ret < 0)
+		return ret;
+
+	struct iio_interface_init_par iio_axi_adc_intf_par = {
+		.dev_name = iio_axi_adc_inst->adc->name,
+		.dev_instance = iio_axi_adc_inst,
+		.iio_device = iio_axi_adc_create_device(iio_axi_adc_inst->adc->name, iio_axi_adc_inst->adc->num_channels),
+		.get_xml = iio_axi_adc_get_xml,
+		.transfer_dev_to_mem = iio_axi_adc_transfer_dev_to_mem,
+		.transfer_mem_to_dev = NULL,
+		.read_data = iio_axi_adc_read_dev,
+		.write_data = NULL,
+	};
+
+	struct iio_interface_init_par iio_axi_dac_intf_par = {
+		.dev_name = iio_axi_dac_inst->dac->name,
+		.dev_instance = iio_axi_dac_inst,
+		.iio_device = iio_axi_dac_create_device(iio_axi_dac_inst->dac->name, iio_axi_dac_inst->dac->num_channels),
+		.get_xml = iio_axi_dac_get_xml,
+		.transfer_dev_to_mem = NULL,
+		.transfer_mem_to_dev = iio_axi_dac_transfer_mem_to_dev,
+		.read_data = NULL,
+		.write_data = iio_axi_dac_write_dev,
+	};
+
+	char dev_name[] = "ad9361-phy";
+	struct iio_interface_init_par iio_ad9361_intf_par = {
+		.dev_name = dev_name,
+		.dev_instance = ad9361_phy,
+		.iio_device = iio_ad9361_create_device(dev_name),
+		.get_xml = iio_ad9361_get_xml,
+		.transfer_dev_to_mem = NULL,
+		.transfer_mem_to_dev = NULL,
+		.read_data = NULL,
+		.write_data = NULL,
+	};
+
+	ret = iio_register(&iio_axi_adc_intf_par);
+	if(ret < 0)
+		return ret;
+
+	ret = iio_register(&iio_axi_dac_intf_par);
+	if(ret < 0)
+		return ret;
+
+	ret = iio_register(&iio_ad9361_intf_par);
+	if(ret < 0)
+		return ret;
+
+	ret = irq_ctrl_init(&irq_desc, &irq_init_param);
+	if(ret < 0)
+		return ret;
+	xil_uart_init_par.irq_desc = irq_desc;
+#ifdef UART_INTERFACE
+	ret = uart_init(&uart_device, &uart_init_par);
+	if(ret < 0)
+		return ret;
+	status = irq_global_enable(irq_desc);
+	if (status < 0)
+		return status;
+	while(1) {
+		ret = tinyiiod_read_command(iiod);
+		if(ret < 0)
+			return ret;
+	}
+#endif // UART_INTERFACE
+#endif // USE_LIBIIO
 
 	printf("Done.\n");
 
