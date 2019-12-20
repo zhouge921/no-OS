@@ -39,7 +39,15 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c			\
 	$(DRIVERS)/axi_core/axi_dmac/axi_dmac.c				\
 	$(DRIVERS)/axi_core/jesd204/axi_jesd204_rx.c			\
 	$(DRIVERS)/axi_core/jesd204/axi_jesd204_tx.c
-SRCS +=	$(NO-OS)/util/util.c
+SRCS +=	$(NO-OS)/util/xml.c					\
+	$(NO-OS)/util/fifo.c					\
+	$(NO-OS)/util/util.c					\
+	$(NO-OS)/iio/iio.c						\
+	$(NO-OS)/iio/iio_axi_adc/iio_axi_adc.c	\
+	$(NO-OS)/iio/iio_axi_dac/iio_axi_dac.c	\
+	$(NO-OS)/iio/iio_app/iio_app.c			\
+	$(NO-OS)/iio/iio_app/iio_axi_adc_app.c	\
+	$(NO-OS)/iio/iio_app/iio_axi_dac_app.c
 ifeq (xilinx,$(strip $(PLATFORM)))
 SRCS += $(DRIVERS)/axi_core/jesd204/xilinx_transceiver.c		\
 	$(DRIVERS)/axi_core/jesd204/axi_adxcvr.c			\
@@ -52,6 +60,8 @@ SRCS += $(DRIVERS)/axi_core/clk_altera_a10_fpll/clk_altera_a10_fpll.c	\
 endif
 SRCS +=	$(PLATFORM_DRIVERS)/axi_io.c					\
 	$(PLATFORM_DRIVERS)/spi.c					\
+	$(PLATFORM_DRIVERS)/irq.c					\
+	$(PLATFORM_DRIVERS)/uart.c					\
 	$(PLATFORM_DRIVERS)/gpio.c					\
 	$(PLATFORM_DRIVERS)/delay.c
 INCS :=	$(PROJECT)/src/app/app_config.h					\
@@ -109,10 +119,25 @@ INCS += $(DRIVERS)/axi_core/clk_altera_a10_fpll/clk_altera_a10_fpll.h	\
 	$(DRIVERS)/axi_core/jesd204/altera_adxcvr.h
 endif
 INCS +=	$(PLATFORM_DRIVERS)/spi_extra.h					\
+	$(PLATFORM_DRIVERS)/irq_extra.h					\
+	$(PLATFORM_DRIVERS)/uart_extra.h				\
 	$(PLATFORM_DRIVERS)/gpio_extra.h
 INCS +=	$(INCLUDE)/axi_io.h						\
 	$(INCLUDE)/spi.h						\
 	$(INCLUDE)/gpio.h						\
 	$(INCLUDE)/error.h						\
 	$(INCLUDE)/delay.h						\
-	$(INCLUDE)/util.h
+	$(INCLUDE)/fifo.h						\
+	$(INCLUDE)/irq.h						\
+	$(INCLUDE)/uart.h						\
+	$(INCLUDE)/xml.h						\
+	$(INCLUDE)/util.h						\
+	$(NO-OS)/iio/iio.h						\
+	$(NO-OS)/iio/iio_types.h				\
+	$(NO-OS)/iio/iio_axi_adc/iio_axi_adc.h	\
+	$(NO-OS)/iio/iio_axi_dac/iio_axi_dac.h	\
+	$(NO-OS)/iio/iio_app/iio_app.h			\
+	$(NO-OS)/iio/iio_app/iio_axi_adc_app.h	\
+	$(NO-OS)/iio/iio_app/iio_axi_dac_app.h	\
+	$(NO-OS)/libraries/libtinyiiod/tinyiiod.h	\
+	$(NO-OS)/libraries/libtinyiiod/compat.h
