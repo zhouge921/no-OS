@@ -63,6 +63,8 @@
 #include "iio_app.h"
 #include "iio_axi_adc_app.h"
 #include "iio_axi_dac_app.h"
+#include "iio_generic_app.h"
+#include "iio_ad713x.h"
 #include "iio_ad9361.h"
 #include "irq.h"
 #include "irq_extra.h"
@@ -687,6 +689,11 @@ int main(void)
 	struct iio_axi_dac_app_init_param iio_axi_dac_app_init_par;
 
 	/**
+	 * iio generic application configurations.
+	 */
+	struct iio_interface_init_par iio_generic_app_init_par;
+
+	/**
 	 * UART server read/write callbacks.
 	 */
 	struct iio_server_ops uart_iio_server_ops;
@@ -705,6 +712,11 @@ int main(void)
 	 * iio application instance descriptor.
 	 */
 	struct iio_axi_dac_app_desc *iio_axi_dac_app_desc;
+
+	/**
+	 * iio application instance descriptor.
+	 */
+	struct iio_generic_app_desc *iio_generic_app_desc;
 
 	/**
 	 * Xilinx platform dependent initialization for IRQ.
@@ -792,6 +804,37 @@ int main(void)
 	};
 
 	status = iio_axi_dac_app_init(&iio_axi_dac_app_desc, &iio_axi_dac_app_init_par);
+	if(status < 0)
+		return status;
+
+	uint32_t spi_eng_msg_cmds[2];
+	struct iio_713x_init_par iio_713x_init_par = {
+		.num_channels = 8,
+		.spi_eng_msg_cmds = ARRAY_SIZE(&spi_eng_msg_cmds),
+		.msg_cmd_len = 2,
+		.tx_buf_addr = 0xA000000,
+		.rx_buf_addr = 0x800000,
+		.dcache_invalidate_range = (void (*)(uint32_t, uint32_t))Xil_DCacheInvalidateRange,
+	};
+	struct iio_713x *iio_713x_inst;
+	status = iio_ad713x_init(&iio_713x_inst, &iio_713x_init_par);
+	if(status < 0)
+		return status;
+
+	char dev_name1[] = "generic";
+
+	iio_generic_app_init_par = (struct iio_interface_init_par){
+		.dev_name = dev_name1,
+		.dev_instance = iio_713x_inst,
+		.iio_device = iio_ad713x_create_device(dev_name1, iio_713x_inst->num_channels),
+		.get_xml = iio_ad713x_get_xml,
+		.transfer_dev_to_mem = NULL,
+		.transfer_mem_to_dev = NULL,
+		.read_data = iio_ad713x_read_dev,
+		.write_data = NULL,
+	};
+
+	status = iio_generic_app_init(&iio_generic_app_desc, &iio_generic_app_init_par);
 	if(status < 0)
 		return status;
 
