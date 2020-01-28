@@ -41,6 +41,9 @@
 /***************************** Include Files **********************************/
 /******************************************************************************/
 
+#include "delay.h"
+#include "spi.h"
+#include "spi_extra.h"
 #include "platform_drivers.h"
 #include "ad9144.h"
 #include "ad9523.h"
@@ -261,19 +264,20 @@ int main(void)
 	ad9680_spi_param.type = ZYNQ_PSU_SPI;
 #endif
 #ifdef MICROBLAZE
-	ad9523_spi_param.type = MICROBLAZE_SPI;
-	ad9144_spi_param.type = MICROBLAZE_SPI;
-	ad9680_spi_param.type = MICROBLAZE_SPI;
+	struct xil_spi_init_param xil_spi_param = {
+			.type = SPI_PL,
+			.device_id = XPAR_SPI_0_DEVICE_ID,
+	};
+	ad9523_spi_param.extra = &xil_spi_param;
+	ad9144_spi_param.extra = &xil_spi_param;
+	ad9680_spi_param.extra = &xil_spi_param;
 #endif
-	ad9523_spi_param.chip_select = SPI_CHIP_SELECT(0);
-	ad9144_spi_param.chip_select = SPI_CHIP_SELECT(1);
-	ad9680_spi_param.chip_select = SPI_CHIP_SELECT(2);
-	ad9523_spi_param.cpha = 0;
-	ad9144_spi_param.cpha = 0;
-	ad9680_spi_param.cpha = 0;
-	ad9523_spi_param.cpol = 0;
-	ad9144_spi_param.cpol = 0;
-	ad9680_spi_param.cpol = 0;
+	ad9523_spi_param.chip_select = 0;
+	ad9144_spi_param.chip_select = 1;
+	ad9680_spi_param.chip_select = 2;
+	ad9523_spi_param.mode = SPI_MODE_0;
+	ad9144_spi_param.mode = SPI_MODE_0;
+	ad9680_spi_param.mode = SPI_MODE_0;
 
 	struct ad9523_channel_spec	ad9523_channels[8];
 	struct ad9523_platform_data	ad9523_pdata;

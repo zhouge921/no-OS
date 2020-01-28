@@ -106,15 +106,6 @@
 #define uint64_t alt_u64
 #endif
 
-// sleep functions
-
-#define mdelay(msecs) usleep(1000*msecs)
-#define udelay(usecs) usleep(usecs)
-
-#ifdef MICROBLAZE
-void usleep(uint32_t us_count);
-#endif
-
 // print functions
 
 #ifdef ALTERA
@@ -193,53 +184,9 @@ void ad_platform_close(void);
 #define TRUE				1
 #endif
 
-#define SPI_CHIP_SELECT(x) (~(1 << (x)))
-
 /******************************************************************************/
 /*************************** Types Declarations *******************************/
 /******************************************************************************/
-
-typedef enum {
-	GENERIC_I2C
-} i2c_type;
-
-typedef struct {
-	i2c_type	type;
-	uint32_t	id;
-	uint32_t	max_speed_hz;
-	uint8_t		slave_address;
-} i2c_init_param;
-
-typedef struct {
-	i2c_type	type;
-	uint32_t	id;
-	uint32_t	max_speed_hz;
-	uint8_t		slave_address;
-} i2c_desc;
-
-typedef enum {
-	ZYNQ_PS7_SPI,
-	ZYNQ_PSU_SPI,
-	MICROBLAZE_SPI,
-	NIOS_II_SPI
-} spi_type;
-
-typedef struct {
-	spi_type	type;
-	uint8_t     chip_select;
-	uint32_t    cpha;
-	uint32_t    cpol;
-} spi_init_param;
-
-typedef struct {
-	spi_type	type;
-	uint32_t	id;
-	uint32_t    base_address;
-	uint32_t    device_id;
-	uint8_t     chip_select;
-	uint32_t    cpha;
-	uint32_t    cpol;
-} spi_desc;
 
 typedef enum {
 	ZYNQ_PS7_GPIO,
@@ -258,36 +205,7 @@ typedef struct {
 /************************ Functions Declarations ******************************/
 /******************************************************************************/
 
-/* Initialize the I2C communication peripheral. */
-int32_t i2c_init(i2c_desc **desc,
-		 const i2c_init_param *param);
-
-/* Free the resources allocated by i2c_init(). */
-int32_t i2c_remove(i2c_desc *desc);
-
-/* Write data to a slave device. */
-int32_t i2c_write(i2c_desc *desc,
-		  uint8_t *data,
-		  uint8_t bytes_number,
-		  uint8_t stop_bit);
-
-/* Read data from a slave device. */
-int32_t i2c_read(i2c_desc *desc,
-		 uint8_t *data,
-		 uint8_t bytes_number,
-		 uint8_t stop_bit);
-
 /* Initialize the SPI communication peripheral. */
-int32_t spi_init(spi_desc **desc,
-		 const spi_init_param *param);
-
-/* Free the resources allocated by spi_init() */
-int32_t spi_remove(spi_desc *desc);
-
-/* Write and read data to/from SPI. */
-int32_t spi_write_and_read(spi_desc *desc,
-			   uint8_t *data,
-			   uint8_t bytes_number);
 
 /* Obtain the GPIO decriptor. */
 int32_t gpio_get(gpio_desc **desc,

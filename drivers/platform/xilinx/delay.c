@@ -68,6 +68,6 @@ void mdelay(uint32_t msecs)
 #ifdef _XPARAMETERS_PS_H_
 	usleep(msecs * 1000);
 #else
-	usleep(msecs * 50);	// FIXME
+	usleep(msecs * 1000);	// FIXME
 #endif
 }

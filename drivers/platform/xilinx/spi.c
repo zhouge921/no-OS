@@ -105,6 +105,14 @@ int32_t spi_init(struct spi_desc **desc,
 					 xdesc->config,
 					 ((XSpi_Config*)xdesc->config)
 					 ->BaseAddress);
+		if(ret == XST_DEVICE_IS_STARTED){
+			XSpi_Stop((XSpi *)(xdesc->instance));
+		}
+		ret = XSpi_CfgInitialize(xdesc->instance,
+					 xdesc->config,
+					 ((XSpi_Config*)xdesc->config)
+					 ->BaseAddress);
+
 		if(ret != SUCCESS)
 			goto pl_error;
 
