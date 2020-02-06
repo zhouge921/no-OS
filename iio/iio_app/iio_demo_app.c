@@ -228,7 +228,7 @@ static ssize_t iio_demo_transfer_dev_to_mem(void *iio_inst,
 	/* Implement if necessary. */
 	return bytes_count;
 }
-
+#include "parameters.h"
 /**
  * @brief Write chunk of data into RAM.
  * This function is probably called multiple times by libtinyiiod before a
@@ -241,7 +241,7 @@ static ssize_t iio_demo_transfer_dev_to_mem(void *iio_inst,
  * @param ch_mask - Opened channels mask.
  * @return bytes_count or negative value in case of error.
  */
-static ssize_t iio_demo_write_dev(void *iio_inst, char *pbuf,
+ssize_t iio_demo_write_dev1(void *iio_inst, char *pbuf,
 				     size_t offset,  size_t bytes_count, uint32_t ch_mask)
 {
 	struct iio_demo_device *demo_device;
@@ -266,7 +266,8 @@ static ssize_t iio_demo_write_dev(void *iio_inst, char *pbuf,
 
 			if (ch_mask & BIT(current_ch)) {
 //				*(uint16_t*)(demo_device->ddr_base_addr + offset + i * 2) = pbuf16[j];
-				*(uint16_t*)(demo_device->ddr_base_addr + offset + i * 2) = i;
+				*(uint16_t*)(ADC_DDR_BASEADDR + 0x100000 + offset + i * 2) = pbuf16[j];
+//				*(uint16_t*)(demo_device->ddr_base_addr + offset + i * 2) = i;
 				j++;
 			}
 
@@ -277,6 +278,56 @@ static ssize_t iio_demo_write_dev(void *iio_inst, char *pbuf,
 		}
 
 		return bytes_count;
+}
+#include "axi_dac_core.h"
+ssize_t iio_demo_write_dev2(void *iio_inst, char *buf,
+				     size_t offset,  size_t bytes_count, uint32_t ch_mask)
+{
+	ssize_t ret;
+	struct iio_demo_device *demo_device;
+//	struct iio_demo_device *demo_device = (struct iio_demo_device *)iio_inst;
+//	uint32_t addr = demo_device->ddr_base_addr + offset;
+	uint32_t addr = ADC_DDR_BASEADDR + 0x100000 + offset;
+
+//	ret = axi_dac_set_buff(NULL, addr,
+//			       (uint16_t *)buf,
+//			       bytes_count);
+
+	uint32_t index;
+	uint32_t data_i;
+	uint32_t data_q;
+	uint16_t *buf16 = (uint16_t *)buf;
+	for(index = 0; index < bytes_count; index += 2) {
+		data_i = (buf16[index]);
+		data_q = (buf16[index + 1] << 16);
+
+//		axi_io_write(addr, index * 2, data_i | data_q);
+//		Xil_Out32(addr + index * 2, data_i | data_q);
+
+		volatile uint32_t *LocalAddr = (volatile uint32_t *)(addr + index * 2);
+		*LocalAddr = data_i | data_q;
+	}
+
+	return bytes_count;
+}
+
+ssize_t iio_demo_write_dev(void *iio_inst, char *buf,
+				     size_t offset,  size_t bytes_count, uint32_t ch_mask)
+{
+	ssize_t ret;
+	struct iio_demo_device *demo_device = (struct iio_demo_device *)iio_inst;
+//	uint32_t addr = demo_device->ddr_base_addr + offset;
+	uint32_t addr = ADC_DDR_BASEADDR + 0x100000 + offset;
+	uint16_t *buf16 = (uint16_t *)buf;
+
+	uint32_t index;
+
+	for(index = 0; index < bytes_count; index += 2) {
+		uint32_t *local_addr = (uint32_t *)(addr + index * 2);
+		*local_addr = (buf16[index + 1] << 16) | buf16[index];
+	}
+
+	return bytes_count;
 }
 
 /**
@@ -395,7 +446,7 @@ int32_t iio_demo_app_init(struct iio_demo_app_desc **desc,
 		return FAILURE;
 	}
 	char pbuf[0x100];
-	iio_demo_write_dev(iio_demo_device_inst, pbuf, 0,  iio_demo_device_inst->num_channels * 2 * 400, GENMASK(iio_demo_device_inst->num_channels, 0));
+	iio_demo_write_dev(iio_demo_device_inst, pbuf, 0,  iio_demo_device_inst->num_channels * 2 * 400, GENMASK(iio_demo_device_inst->num_channels - 1, 0));
 
 	return SUCCESS;
 }

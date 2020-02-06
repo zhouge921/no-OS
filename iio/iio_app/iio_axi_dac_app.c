@@ -848,7 +848,8 @@ error:
 
 	return NULL;
 }
-
+extern ssize_t iio_demo_write_dev(void *iio_inst, char *pbuf,
+				     size_t offset,  size_t bytes_count, uint32_t ch_mask);
 /**
  * @brief Application for reading/writing and parameterization of
  * axi_dac device.
@@ -892,7 +893,9 @@ int32_t iio_axi_dac_app_init(struct iio_axi_dac_app_desc **desc,
 		.transfer_dev_to_mem = NULL,
 		.transfer_mem_to_dev = iio_axi_dac_transfer_mem_to_dev,
 		.read_data = NULL,
-		.write_data = iio_axi_dac_write_dev,
+//		.write_data = iio_axi_dac_write_dev,
+		.write_data = iio_demo_write_dev,
+
 	};
 
 	status = iio_register(&iio_axi_dac_intf_par);
