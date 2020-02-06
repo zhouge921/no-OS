@@ -64,6 +64,7 @@
 #include "iio_axi_adc_app.h"
 #include "iio_axi_dac_app.h"
 #include "iio_ad9361_app.h"
+#include "iio_demo_app.h"
 #include "irq.h"
 #include "irq_extra.h"
 #include "uart.h"
@@ -693,6 +694,10 @@ int main(void)
 	 * iio ad9361 app configurations.
 	 */
 	struct iio_ad9361_app_init_param iio_ad9361_app_init_param;
+	/**
+	 * iio demo app configurations.
+	 */
+	struct iio_demo_app_init_param iio_demo_app_init_param;
 
 	/**
 	 * UART server read/write callbacks.
@@ -718,6 +723,11 @@ int main(void)
 	 * iio ad9361 application instance descriptor.
 	 */
 	struct iio_ad9361_app_desc *iio_ad9361_app_desc;
+
+	/**
+	 * iio demo application instance descriptor.
+	 */
+	struct iio_demo_app_desc *iio_demo_desc;
 
 	/**
 	 * Xilinx platform dependent initialization for IRQ.
@@ -810,7 +820,7 @@ int main(void)
 	};
 
 	status = iio_axi_dac_app_init(&iio_axi_dac_app_desc, &iio_axi_dac_app_init_par);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	iio_ad9361_app_init_param = (struct iio_ad9361_app_init_param) {
@@ -818,7 +828,15 @@ int main(void)
 	};
 
 	status = iio_ad9361_app_init(&iio_ad9361_app_desc, &iio_ad9361_app_init_param);
-	if(status < 0)
+	if (status < 0)
+		return status;
+
+	iio_demo_app_init_param = (struct iio_demo_app_init_param) {
+		.ddr_base_addr = ADC_DDR_BASEADDR + 0x100000,
+	};
+
+	status = iio_demo_app_init(&iio_demo_desc, &iio_demo_app_init_param);
+	if (status < 0)
 		return status;
 
 	return iio_app(iio_app_desc);

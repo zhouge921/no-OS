@@ -61,6 +61,8 @@ struct iio_demo_device {
 	const char *name;
 	/** Number of channels */
 	uint8_t num_channels;
+	/** Address used by for reading/writing data to device */
+	uint32_t ddr_base_addr;
 };
 
 /**
@@ -77,7 +79,8 @@ struct iio_demo_app_desc {
  * @brief Application configuration.
  */
 struct iio_demo_app_init_param {
-
+	/** Address used by for reading/writing data to device */
+	uint32_t ddr_base_addr;
 };
 
 /******************************************************************************/
