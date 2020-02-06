@@ -201,6 +201,9 @@ static ssize_t iio_demo_transfer_dev_to_mem(void *iio_inst,
 		size_t bytes_count,
 		uint32_t ch_mask)
 {
+	if (!iio_inst)
+		return FAILURE;
+
 	/* Implement if necessary. */
 	return bytes_count;
 }
@@ -225,6 +228,12 @@ static ssize_t iio_demo_read_dev(void *iio_inst, char *pbuf, size_t offset,
 	uint32_t i, j = 0, current_ch = 0;
 	uint16_t *pbuf16;
 	size_t samples;
+
+	if (!iio_inst)
+		return FAILURE;
+
+	if (!pbuf)
+		return FAILURE;
 
 	demo_device = (struct iio_demo_device *)iio_inst;
 	pbuf16 = (uint16_t*)pbuf;
@@ -260,7 +269,7 @@ static ssize_t iio_demo_get_xml(char** xml, struct iio_device *iio_dev)
 
 	*xml = calloc(1, strlen(demo_xml) + 1);
 	if (!(*xml))
-		return -ENOMEM;
+		return FAILURE;
 
 	memcpy(*xml, demo_xml, strlen(demo_xml));
 
@@ -289,7 +298,7 @@ int32_t iio_demo_app_init(struct iio_demo_app_desc **desc,
 	iio_demo_device_inst->name = demo_dev_name;
 	iio_demo_device_inst->num_channels = 8;
 	iio_device = iio_demo_create_device(demo_dev_name, 8);
-	if (iio_device) {
+	if (!iio_device) {
 		free(iio_demo_device_inst);
 		return FAILURE;
 	}

@@ -52,8 +52,14 @@
 /*************************** Types Declarations *******************************/
 /******************************************************************************/
 
+/**
+ * @struct iio_demo_device
+ * @brief This is a dummy device, independent of hardware.
+ */
 struct iio_demo_device {
+	/** Device name */
 	const char *name;
+	/** Number of channels */
 	uint8_t num_channels;
 };
 
