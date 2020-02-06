@@ -1,6 +1,6 @@
 /***************************************************************************//**
-*   @file   iio_demo_app.h
-*   @brief  Header file of iio_demo_app
+*   @file   iio_demo.h
+*   @brief  Header file of iio_demo
 *   @author Cristian Pop (cristian.pop@analog.com)
 ********************************************************************************
 * Copyright 2019(c) Analog Devices, Inc.
@@ -37,8 +37,8 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef IIO_DEMO_APP_H_
-#define IIO_DEMO_APP_H_
+#ifndef IIO_DEMO_H_
+#define IIO_DEMO_H_
 
 /******************************************************************************/
 /***************************** Include Files **********************************/
@@ -66,19 +66,19 @@ struct iio_demo_device {
 };
 
 /**
- * @struct iio_demo_app_desc
- * @brief Application desciptor.
+ * @struct iio_demo_desc
+ * @brief Desciptor.
  */
-struct iio_demo_app_desc {
+struct iio_demo_desc {
 	/** demo device instance */
 	struct iio_demo_device *iio_demo_dev_inst;
 };
 
 /**
- * @struct iio_demo_app_init_param
- * @brief Application configuration.
+ * @struct iio_demo_init_param
+ * @brief iio demo configuration.
  */
-struct iio_demo_app_init_param {
+struct iio_demo_init_param {
 	/** Address used by for reading/writing data to device */
 	uint32_t ddr_base_addr;
 };
@@ -87,10 +87,10 @@ struct iio_demo_app_init_param {
 /************************ Functions Declarations ******************************/
 /******************************************************************************/
 
-/* Init application. */
-int32_t iio_demo_app_init(struct iio_demo_app_desc **desc,
-			  struct iio_demo_app_init_param *param);
-/* Free the resources allocated by iio_demo_app_init(). */
-int32_t iio_demo_app_remove(struct iio_demo_app_desc *desc);
+/* Init function. */
+int32_t iio_demo_init(struct iio_demo_desc **desc,
+			  struct iio_demo_init_param *param);
+/* Free the resources allocated by iio_demo_init(). */
+int32_t iio_demo_remove(struct iio_demo_desc *desc);
 
-#endif /* IIO_DEMO_APP_H_ */
+#endif /* IIO_DEMO_H_ */

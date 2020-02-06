@@ -1,6 +1,6 @@
 /***************************************************************************//**
- *   @file   iio_demo_app.c
- *   @brief  Implementation of iio_demo_app.c.
+ *   @file   iio_demo.c
+ *   @brief  Implementation of iio_demo.c.
  *   @author Cristian Pop (cristian.pop@analog.com)
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
@@ -43,10 +43,10 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include "iio_demo.h"
 #include "error.h"
 #include "xml.h"
 #include "util.h"
-#include "iio_demo_app.h"
 #include "iio.h"
 
 /******************************************************************************/
@@ -192,12 +192,12 @@ static ssize_t iio_demo_delete_device(struct iio_device *iio_device)
 
 /**
  * @brief Transfer data from RAM to device.
- * @param iio_inst - Physical instance of a iio_axi_dac device.
+ * @param iio_inst - Physical instance of a iio_demo_dac device.
  * @param bytes_count - Number of bytes to transfer.
  * @param ch_mask - Opened channels mask.
  * @return Number of bytes transfered, or negative value in case of failure.
  */
-static ssize_t iio_axi_dac_transfer_mem_to_dev(void *iio_inst,
+static ssize_t iio_demo_transfer_mem_to_dev(void *iio_inst,
 		size_t bytes_count,
 		uint32_t ch_mask)
 {
@@ -228,99 +228,32 @@ static ssize_t iio_demo_transfer_dev_to_mem(void *iio_inst,
 	/* Implement if necessary. */
 	return bytes_count;
 }
-#include "parameters.h"
+
 /**
  * @brief Write chunk of data into RAM.
  * This function is probably called multiple times by libtinyiiod before a
  * "iio_transfer_mem_to_dev" call, since we can only write "bytes_count" bytes
  * at a time.
- * @param iio_inst - Physical instance of a iio_axi_dac device.
+ * @param iio_inst - Physical instance of a iio_demo_dac device.
  * @param buf - Values to write.
  * @param offset - Offset in memory after the nth chunk of data.
  * @param bytes_count - Number of bytes to write.
  * @param ch_mask - Opened channels mask.
  * @return bytes_count or negative value in case of error.
  */
-ssize_t iio_demo_write_dev1(void *iio_inst, char *pbuf,
-				     size_t offset,  size_t bytes_count, uint32_t ch_mask)
-{
-	struct iio_demo_device *demo_device;
-		uint32_t i, j = 0, current_ch = 0;
-		uint16_t *pbuf16;
-		size_t samples;
-
-		if (!iio_inst)
-			return FAILURE;
-
-		if (!pbuf)
-			return FAILURE;
-
-		demo_device = (struct iio_demo_device *)iio_inst;
-		pbuf16 = (uint16_t*)pbuf;
-		samples = (bytes_count * demo_device->num_channels) / hweight8(
-				  ch_mask);
-		samples /= 2; /* because of uint16_t *pbuf16 = (uint16_t*)pbuf; */
-		offset = (offset * demo_device->num_channels) / hweight8(ch_mask);
-
-		for (i = 0; i < samples; i++) {
-
-			if (ch_mask & BIT(current_ch)) {
-//				*(uint16_t*)(demo_device->ddr_base_addr + offset + i * 2) = pbuf16[j];
-				*(uint16_t*)(ADC_DDR_BASEADDR + 0x100000 + offset + i * 2) = pbuf16[j];
-//				*(uint16_t*)(demo_device->ddr_base_addr + offset + i * 2) = i;
-				j++;
-			}
-
-			if (current_ch + 1 < demo_device->num_channels)
-				current_ch++;
-			else
-				current_ch = 0;
-		}
-
-		return bytes_count;
-}
-#include "axi_dac_core.h"
-ssize_t iio_demo_write_dev2(void *iio_inst, char *buf,
-				     size_t offset,  size_t bytes_count, uint32_t ch_mask)
-{
-	ssize_t ret;
-	struct iio_demo_device *demo_device;
-//	struct iio_demo_device *demo_device = (struct iio_demo_device *)iio_inst;
-//	uint32_t addr = demo_device->ddr_base_addr + offset;
-	uint32_t addr = ADC_DDR_BASEADDR + 0x100000 + offset;
-
-//	ret = axi_dac_set_buff(NULL, addr,
-//			       (uint16_t *)buf,
-//			       bytes_count);
-
-	uint32_t index;
-	uint32_t data_i;
-	uint32_t data_q;
-	uint16_t *buf16 = (uint16_t *)buf;
-	for(index = 0; index < bytes_count; index += 2) {
-		data_i = (buf16[index]);
-		data_q = (buf16[index + 1] << 16);
-
-//		axi_io_write(addr, index * 2, data_i | data_q);
-//		Xil_Out32(addr + index * 2, data_i | data_q);
-
-		volatile uint32_t *LocalAddr = (volatile uint32_t *)(addr + index * 2);
-		*LocalAddr = data_i | data_q;
-	}
-
-	return bytes_count;
-}
-
 ssize_t iio_demo_write_dev(void *iio_inst, char *buf,
 				     size_t offset,  size_t bytes_count, uint32_t ch_mask)
 {
-	ssize_t ret;
 	struct iio_demo_device *demo_device = (struct iio_demo_device *)iio_inst;
-//	uint32_t addr = demo_device->ddr_base_addr + offset;
-	uint32_t addr = ADC_DDR_BASEADDR + 0x100000 + offset;
+	uint32_t addr = demo_device->ddr_base_addr + offset;
 	uint16_t *buf16 = (uint16_t *)buf;
-
 	uint32_t index;
+
+	if (!iio_inst)
+		return FAILURE;
+
+	if (!buf)
+		return FAILURE;
 
 	for(index = 0; index < bytes_count; index += 2) {
 		uint32_t *local_addr = (uint32_t *)(addr + index * 2);
@@ -400,14 +333,13 @@ static ssize_t iio_demo_get_xml(char** xml, struct iio_device *iio_dev)
 }
 
 /**
- * @brief Application for reading/writing and parameterization of
- * demo app.
- * @param  desc - Application descriptor.
- * @param init - Application configuration structure.
+ * @brief iio demo init function, registers a demo .
+ * @param desc - Descriptor.
+ * @param init - Configuration structure.
  * @return SUCCESS in case of success, FAILURE otherwise.
  */
-int32_t iio_demo_app_init(struct iio_demo_app_desc **desc,
-			  struct iio_demo_app_init_param *init)
+int32_t iio_demo_init(struct iio_demo_desc **desc,
+			  struct iio_demo_init_param *init)
 {
 	struct iio_interface_init_par iio_demo_intf_par;
 	struct iio_device * iio_device;
@@ -435,7 +367,7 @@ int32_t iio_demo_app_init(struct iio_demo_app_desc **desc,
 		.get_xml = iio_demo_get_xml,
 		.transfer_dev_to_mem = iio_demo_transfer_dev_to_mem,
 		.read_data = iio_demo_read_dev,
-		.transfer_mem_to_dev = iio_axi_dac_transfer_mem_to_dev,
+		.transfer_mem_to_dev = iio_demo_transfer_mem_to_dev,
 		.write_data = iio_demo_write_dev,
 	};
 	status = iio_register(&iio_demo_intf_par);
@@ -453,10 +385,10 @@ int32_t iio_demo_app_init(struct iio_demo_app_desc **desc,
 
 /**
  * @brief Release resources.
- * @param desc - Application descriptor.
+ * @param desc - Descriptor.
  * @return SUCCESS in case of success, FAILURE otherwise.
  */
-int32_t iio_demo_app_remove(struct iio_demo_app_desc *desc)
+int32_t iio_demo_remove(struct iio_demo_desc *desc)
 {
 	int32_t status;
 
